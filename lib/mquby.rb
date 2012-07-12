@@ -23,11 +23,4 @@ end
 
 org.apache.log4j.BasicConfigurator.configure
 
-include_class "org.apache.activemq.broker.BrokerService"
-include_class "org.apache.activemq.broker.BrokerPlugin"
-include_class "org.apache.activemq.security.SimpleAuthenticationPlugin"
-include_class "org.apache.activemq.security.AuthorizationPlugin"
-include_class "org.apache.activemq.security.AuthorizationEntry"
-include_class "org.apache.activemq.security.DefaultAuthorizationMap"
-include_class "org.apache.activemq.security.AuthorizationMap"
-include_class "org.apache.activemq.security.AuthenticationUser"
+require "mquby/dsl"
