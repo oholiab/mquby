@@ -9,4 +9,7 @@ include MQuby::DSL
 broker "broker", :port => 61613 do
   topic "test.topic", "test", "test", "test"
   user  "test", "secret", ["test", "everyone", "admins"]
+  transport "stomp2", "stomp://localhost:61614"
 end
+
+

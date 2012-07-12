@@ -3,15 +3,19 @@ module MQuby
 
     include_class "org.apache.activemq.broker.BrokerService"
     include_class "org.apache.activemq.broker.BrokerPlugin"
+    include_class "org.apache.activemq.broker.TransportConnector"
+    include_class "org.apache.activemq.usage.SystemUsage"
     include_class "org.apache.activemq.security.SimpleAuthenticationPlugin"
     include_class "org.apache.activemq.security.AuthorizationPlugin"
     include_class "org.apache.activemq.security.AuthorizationEntry"
     include_class "org.apache.activemq.security.DefaultAuthorizationMap"
     include_class "org.apache.activemq.security.AuthorizationMap"
     include_class "org.apache.activemq.security.AuthenticationUser"
+    include_class "java.net.URI"
 
     @@acls = []
     @@users = []
+    @@transports = []
 
     def user(name, password, groups)
       user = AuthenticationUser.new(name, password, groups.join(","))
@@ -20,6 +24,13 @@ module MQuby
 
     def topic(name, read, write, admin)
       @@acls << {:topic => name, :read => read, :write => write, :admin => "admin"}
+    end
+
+    def transport(name, uri)
+      transport = TransportConnector.new
+      transport.name = name
+      transport.uri = URI.new(uri)
+      @@transports << transport
     end
 
     def broker(name, options)
@@ -49,7 +60,9 @@ module MQuby
       port = options.fetch(:port) {61613}
 
       broker.add_connector("stomp://localhost:#{port}")
+      @@transports.each {|t| broker.add_connector(t)}
       broker.start
+      broker
     end
   end
 end
