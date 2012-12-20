@@ -1,3 +1,5 @@
+require 'mquby/helpers'
+
 module MQuby
   module DSL
 
@@ -5,6 +7,9 @@ module MQuby
     include_class "org.apache.activemq.broker.BrokerPlugin"
     include_class "org.apache.activemq.broker.TransportConnector"
     include_class "org.apache.activemq.usage.SystemUsage"
+    include_class "org.apache.activemq.usage.MemoryUsage"
+    include_class "org.apache.activemq.usage.StoreUsage"
+    include_class "org.apache.activemq.usage.TempUsage"
     include_class "org.apache.activemq.security.SimpleAuthenticationPlugin"
     include_class "org.apache.activemq.security.AuthorizationPlugin"
     include_class "org.apache.activemq.security.AuthorizationEntry"
@@ -16,6 +21,7 @@ module MQuby
     @@acls = []
     @@users = []
     @@transports = []
+    @@systemusage = SystemUsage.new
 
     def user(name, password, groups)
       user = AuthenticationUser.new(name, password, groups.join(","))
@@ -31,6 +37,35 @@ module MQuby
       transport.name = name
       transport.uri = URI.new(uri)
       @@transports << transport
+    end
+
+    def system_usage(resource, resourcelimit)
+
+      limit = resourcelimit.to_sizeinbytes
+
+      case resource
+      when :memory
+        memory = MemoryUsage.new
+        memory.limit = limit
+        memory.percent_usage_min_delta = 20
+        @@systemusage.memory_usage = memory
+        return
+      when :store
+        store = StoreUsage.new
+        store.limit = limit
+        @@systemusage.store_usage = store
+        return
+      when :temp
+        temp = TempUsage.new
+        temp.limit = limit
+        @@systemusage.temp_usage = temp
+        return
+      end
+
+      raise DSLError "Resource type #{resource.to_s} not recognised"
+
+    rescue TypeError => e
+      raise DSLError "#{e.class}: #{e}"
     end
 
     def broker(name, options)
@@ -53,6 +88,8 @@ module MQuby
 
       broker = BrokerService.new
 
+      broker.system_usage = @@systemusage if @@systemusage
+
       broker.broker_name = name
 
       broker.plugins = [authorization, authentication]
@@ -64,5 +101,13 @@ module MQuby
       broker.start
       broker
     end
+
+
+    def method_missing(method, *args, &block)
+      raise DSLError "Method #{method} not known"
+    end
+
+
+    class DSLError < RuntimeError; end
   end
 end
